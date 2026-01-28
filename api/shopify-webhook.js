@@ -1,7 +1,17 @@
 const https = require('https');
 
-export default async function handler(req, res) {
-  // Only allow POST requests
+module.exports = async (req, res) => {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -9,7 +19,6 @@ export default async function handler(req, res) {
   try {
     const order = req.body;
     
-    // Prepare order data for Firebase
     const orderData = {
       orderNumber: order.order_number.toString(),
       customerName: order.customer ? `${order.customer.first_name} ${order.customer.last_name}` : 'Guest',
@@ -20,15 +29,13 @@ export default async function handler(req, res) {
       eta: ''
     };
 
-    // Write to Firebase Realtime Database
     await writeToFirebase(orderData);
-
-    res.status(200).json({ success: true, message: 'Order created' });
+    return res.status(200).json({ success: true, message: 'Order created' });
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
-}
+};
 
 function writeToFirebase(orderData) {
   return new Promise((resolve, reject) => {
