@@ -20,11 +20,15 @@ module.exports = async (req, res) => {
     // Generate unique tracking token
     const trackingToken = crypto.randomBytes(32).toString('hex');
     
+    // Extract delivery postcode from shipping address
+    const deliveryPostcode = order.shipping_address ? order.shipping_address.zip : '';
+    
     const orderData = {
       orderNumber: order.order_number.toString(),
       trackingToken: trackingToken,
       customerName: order.customer ? `${order.customer.first_name} ${order.customer.last_name}` : 'Guest',
       email: order.customer ? order.customer.email : order.email,
+      deliveryPostcode: deliveryPostcode,
       orderDate: order.created_at.split('T')[0],
       stage: 'confirmed',
       deliveryDate: '',
@@ -86,7 +90,7 @@ function writeToFirebase(orderData) {
 
 function sendConfirmationEmail(orderData) {
   return new Promise((resolve, reject) => {
-    const trackingUrl = `https://lumbr-order-tracking.web.app/track/${orderData.trackingToken}`;
+    const trackingUrl = `https://lumbr.uk/pages/track-order?order=${orderData.orderNumber}`;
     
     const emailData = JSON.stringify({
       from: 'Lumbr <lumbr@lumbr.uk>',
@@ -130,7 +134,8 @@ function sendConfirmationEmail(orderData) {
               
               <a href="${trackingUrl}" class="button">Track Your Order</a>
               
-              <p><small>Or copy this link: ${trackingUrl}</small></p>
+              <p><small>Or visit: ${trackingUrl}</small></p>
+              <p><small>You'll need your order number and delivery postcode to access tracking.</small></p>
               
               <p>We'll keep you updated via email as your order progresses through each stage of production.</p>
               
