@@ -37,47 +37,47 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
     
     let subject = '';
     let heading = '';
-    let messageContent = '';
+    let topMessage = '';
     
     if (updateType === 'message') {
       subject = `New Message - Order #${orderNumber}`;
       heading = 'You have a new message';
-      
-      console.log('Processing message email. History:', messageHistory);
-      
-      // Check if we have message history AND it has items
-      if (messageHistory && Array.isArray(messageHistory) && messageHistory.length > 0) {
-        console.log('Building chat bubbles for', messageHistory.length, 'messages');
-        
-        const recentMessages = messageHistory.slice(-3);
-        let messagesHtml = '';
-        
-        recentMessages.forEach(msg => {
-          const senderLabel = msg.sender === 'customer' ? 'You' : 'Lumbr Team';
-          const isCustomer = msg.sender === 'customer';
-          const alignment = isCustomer ? 'flex-end' : 'flex-start';
-          const bgColor = isCustomer ? '#000' : '#E8E4DC';
-          const textColor = isCustomer ? '#fff' : '#333';
-          
-          messagesHtml += '<div style="display:flex;justify-content:' + alignment + ';margin-bottom:12px;"><div style="max-width:75%;background-color:' + bgColor + ';color:' + textColor + ';padding:12px 16px;border-radius:16px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:600;opacity:0.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">' + senderLabel + '</div><div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.4;">' + msg.message + '</div></div></div>';
-        });
-        
-        messageContent = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:24px 0;border-radius:8px;cursor:pointer;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;text-align:center;">💬 CONVERSATION</div>' + messagesHtml + '<div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #E8E4DC;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#BAA684;margin:0;font-weight:500;">Click to view full conversation</p></div></div></a>';
-      } else {
-        console.log('No message history, using fallback single message');
-        messageContent = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border-left:3px solid #BAA684;padding:20px 24px;margin:24px 0;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#333;cursor:pointer;">' + message + '</div></a>';
-      }
+      topMessage = '';
     } else if (updateType === 'status') {
       subject = `Status Update - Order #${orderNumber}`;
       heading = 'Your order status has changed';
-      messageContent = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">Your order has been updated. View the tracking page for the latest status and details.</p>';
+      topMessage = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 24px 0;">Your order has been updated. View the tracking page for the latest status and details.</p>';
     } else {
       subject = `Order Update - Order #${orderNumber}`;
       heading = 'Your order has been updated';
-      messageContent = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">There has been an update to your order. Check your tracking page for details.</p>';
+      topMessage = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 24px 0;">There has been an update to your order. Check your tracking page for details.</p>';
     }
     
-    const htmlEmail = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;font-family:Georgia,serif;background-color:#f5f5f5;"><div style="max-width:600px;margin:0 auto;background-color:#fff;"><div style="background-color:#E8E4DC;padding:48px 40px;text-align:center;"><img src="https://lumbr.uk/cdn/shop/t/44/assets/lumbrlogo-large.png?v=176395999498835774581769444970" alt="Lumbr" style="max-width:200px;height:auto;margin:0 auto;display:block;"></div><div style="padding:48px 40px;background-color:#fff;"><h2 style="font-size:28px;font-weight:400;color:#000;margin:0 0 24px 0;">' + heading + '</h2><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">Hi ' + (customerName || 'there') + ',</p>' + messageContent + '<div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:32px 0;"><div style="font-family:Arial,sans-serif;padding:8px 0;font-size:14px;"><span style="color:#999;text-transform:uppercase;font-size:11px;letter-spacing:0.5px;display:block;margin-bottom:8px;">ORDER NUMBER</span><span style="color:#000;font-weight:500;">#' + orderNumber + '</span></div></div><center><a href="' + trackingUrl + '" style="display:inline-block;padding:16px 40px;background-color:#000;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:500;letter-spacing:0.5px;margin:32px 0;border-radius:2px;">CHAT NOW</a></center><div style="height:1px;background-color:#E8E4DC;margin:32px 0;"></div><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">If you have any questions, simply reply to this email or send a message through your order tracking page.</p><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:24px 0 0 0;">- The Lumbr Team</p></div><div style="background-color:#E8E4DC;padding:40px;text-align:center;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:0;line-height:1.6;">Handmade in England using kiln dried, sub 10% best grade timber</p><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:8px 0 0 0;">&copy; ' + currentYear + ' Lumbr. All rights reserved.</p></div></div></body></html>';
+    // BUILD CHAT SECTION - ALWAYS SHOW ON EVERY EMAIL
+    let chatSection = '';
+    
+    if (messageHistory && Array.isArray(messageHistory) && messageHistory.length > 0) {
+      // Show last 3 messages as chat bubbles
+      const recentMessages = messageHistory.slice(-3);
+      let messagesHtml = '';
+      
+      recentMessages.forEach(msg => {
+        const senderLabel = msg.sender === 'customer' ? 'You' : 'Lumbr Team';
+        const isCustomer = msg.sender === 'customer';
+        const alignment = isCustomer ? 'flex-end' : 'flex-start';
+        const bgColor = isCustomer ? '#000' : '#E8E4DC';
+        const textColor = isCustomer ? '#fff' : '#333';
+        
+        messagesHtml += '<div style="display:flex;justify-content:' + alignment + ';margin-bottom:12px;"><div style="max-width:75%;background-color:' + bgColor + ';color:' + textColor + ';padding:12px 16px;border-radius:16px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:600;opacity:0.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">' + senderLabel + '</div><div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.4;">' + msg.message + '</div></div></div>';
+      });
+      
+      chatSection = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:24px 0;border-radius:8px;cursor:pointer;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;text-align:center;">💬 CONVERSATION</div>' + messagesHtml + '<div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #E8E4DC;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#BAA684;margin:0;font-weight:500;">Click to view full conversation</p></div></div></a>';
+    } else {
+      // No messages yet - show placeholder
+      chatSection = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:32px 24px;margin:24px 0;border-radius:8px;cursor:pointer;text-align:center;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">💬 CONVERSATION</div><p style="font-family:Arial,sans-serif;font-size:14px;color:#666;margin:0;line-height:1.6;">No messages yet. Have a question?<br>Click to start a conversation with us.</p></div></a>';
+    }
+    
+    const htmlEmail = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;font-family:Georgia,serif;background-color:#f5f5f5;"><div style="max-width:600px;margin:0 auto;background-color:#fff;"><div style="background-color:#E8E4DC;padding:48px 40px;text-align:center;"><img src="https://lumbr.uk/cdn/shop/t/44/assets/lumbrlogo-large.png?v=176395999498835774581769444970" alt="Lumbr" style="max-width:200px;height:auto;margin:0 auto;display:block;"></div><div style="padding:48px 40px;background-color:#fff;"><h2 style="font-size:28px;font-weight:400;color:#000;margin:0 0 24px 0;">' + heading + '</h2><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">Hi ' + (customerName || 'there') + ',</p>' + topMessage + chatSection + '<div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:32px 0;"><div style="font-family:Arial,sans-serif;padding:8px 0;font-size:14px;"><span style="color:#999;text-transform:uppercase;font-size:11px;letter-spacing:0.5px;display:block;margin-bottom:8px;">ORDER NUMBER</span><span style="color:#000;font-weight:500;">#' + orderNumber + '</span></div></div><center><a href="' + trackingUrl + '" style="display:inline-block;padding:16px 40px;background-color:#000;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:500;letter-spacing:0.5px;margin:32px 0;border-radius:2px;">CHAT NOW</a></center><div style="height:1px;background-color:#E8E4DC;margin:32px 0;"></div><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">If you have any questions, simply reply to this email or send a message through your order tracking page.</p><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:24px 0 0 0;">- The Lumbr Team</p></div><div style="background-color:#E8E4DC;padding:40px;text-align:center;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:0;line-height:1.6;">Handmade in England using kiln dried, sub 10% best grade timber</p><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:8px 0 0 0;">&copy; ' + currentYear + ' Lumbr. All rights reserved.</p></div></div></body></html>';
     
     const emailData = JSON.stringify({
       from: 'Lumbr <lumbr@lumbr.uk>',
