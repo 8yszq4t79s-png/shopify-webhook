@@ -95,56 +95,153 @@ function sendConfirmationEmail(orderData) {
     const emailData = JSON.stringify({
       from: 'Lumbr <lumbr@lumbr.uk>',
       to: [orderData.email],
-      subject: `Order Confirmation - Lumbr Order #${orderData.orderNumber}`,
+      subject: `Order #${orderData.orderNumber} Confirmed`,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9f9f9; }
-            .button { 
-              display: inline-block; 
-              padding: 12px 30px; 
-              background-color: #3498db; 
-              color: white; 
-              text-decoration: none; 
-              border-radius: 5px; 
-              margin: 20px 0;
+            body { 
+              margin: 0; 
+              padding: 0; 
+              font-family: Georgia, 'Times New Roman', serif;
+              background-color: #f5f5f5;
+              -webkit-font-smoothing: antialiased;
             }
-            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            .email-wrapper {
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+            }
+            .header {
+              background-color: #E8E4DC;
+              padding: 48px 40px;
+              text-align: center;
+            }
+            .logo {
+              font-size: 42px;
+              font-weight: 400;
+              color: #BAA684;
+              letter-spacing: 1px;
+              margin: 0;
+            }
+            .content {
+              padding: 48px 40px;
+              background-color: #ffffff;
+            }
+            .heading {
+              font-size: 28px;
+              font-weight: 400;
+              color: #000000;
+              margin: 0 0 24px 0;
+              line-height: 1.3;
+            }
+            .text {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+              font-size: 15px;
+              line-height: 1.6;
+              color: #666666;
+              margin: 0 0 16px 0;
+            }
+            .order-details {
+              background-color: #FAFAFA;
+              border: 1px solid #E8E4DC;
+              padding: 24px;
+              margin: 32px 0;
+            }
+            .detail-row {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+              display: flex;
+              justify-content: space-between;
+              padding: 8px 0;
+              font-size: 14px;
+            }
+            .detail-label {
+              color: #999999;
+              text-transform: uppercase;
+              font-size: 11px;
+              letter-spacing: 0.5px;
+            }
+            .detail-value {
+              color: #000000;
+              font-weight: 500;
+            }
+            .button {
+              display: inline-block;
+              padding: 16px 40px;
+              background-color: #000000;
+              color: #ffffff !important;
+              text-decoration: none;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+              font-size: 14px;
+              font-weight: 500;
+              letter-spacing: 0.5px;
+              margin: 32px 0;
+              border-radius: 2px;
+            }
+            .footer {
+              background-color: #E8E4DC;
+              padding: 40px;
+              text-align: center;
+            }
+            .footer-text {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+              font-size: 12px;
+              color: #999999;
+              margin: 0;
+              line-height: 1.6;
+            }
+            .divider {
+              height: 1px;
+              background-color: #E8E4DC;
+              margin: 32px 0;
+            }
           </style>
         </head>
         <body>
-          <div class="container">
+          <div class="email-wrapper">
             <div class="header">
-              <h1>Thank You For Your Order!</h1>
+              <h1 class="logo">Lumbr</h1>
             </div>
+            
             <div class="content">
-              <h2>Hi ${orderData.customerName},</h2>
-              <p>We've received your order and are excited to start crafting your bespoke furniture.</p>
+              <h2 class="heading">Thank you for your order</h2>
               
-              <p><strong>Order Number:</strong> #${orderData.orderNumber}</p>
-              <p><strong>Order Date:</strong> ${orderData.orderDate}</p>
-              <p><strong>Status:</strong> Order Confirmed</p>
+              <p class="text">We're excited to start handcrafting your bespoke furniture in our Staffordshire workshop.</p>
               
-              <p>Track your order progress anytime using your personal tracking link:</p>
+              <div class="order-details">
+                <div class="detail-row">
+                  <span class="detail-label">Order Number</span>
+                  <span class="detail-value">#${orderData.orderNumber}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Order Date</span>
+                  <span class="detail-value">${orderData.orderDate}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value">Order Confirmed</span>
+                </div>
+              </div>
               
-              <a href="${trackingUrl}" class="button">Track Your Order</a>
+              <p class="text">Track your order's progress from workshop to doorstep. You'll need your order number and delivery postcode to access tracking.</p>
               
-              <p><small>Or visit: ${trackingUrl}</small></p>
-              <p><small>You'll need your order number and delivery postcode to access tracking.</small></p>
+              <center>
+                <a href="${trackingUrl}" class="button">TRACK YOUR ORDER</a>
+              </center>
               
-              <p>We'll keep you updated via email as your order progresses through each stage of production.</p>
+              <div class="divider"></div>
               
-              <p>If you have any questions, feel free to reply to this email.</p>
+              <p class="text">We'll keep you updated throughout the crafting process. If you have any questions, simply reply to this email.</p>
               
-              <p>Best regards,<br>The Lumbr Team</p>
+              <p class="text" style="margin-top: 24px;">— The Lumbr Team</p>
             </div>
+            
             <div class="footer">
-              <p>Lumbr - Bespoke Handmade Furniture</p>
+              <p class="footer-text">Handmade in England using kiln dried, sub 10% best grade timber</p>
+              <p class="footer-text" style="margin-top: 8px;">© ${new Date().getFullYear()} Lumbr. All rights reserved.</p>
             </div>
           </div>
         </body>
