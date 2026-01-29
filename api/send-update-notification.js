@@ -16,8 +16,6 @@ module.exports = async (req, res) => {
   try {
     const { orderNumber, customerName, email, updateType, message, messageHistory } = req.body;
     
-    console.log('Received request:', { orderNumber, updateType, messageHistoryLength: messageHistory ? messageHistory.length : 0 });
-    
     if (!orderNumber || !email) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -25,14 +23,13 @@ module.exports = async (req, res) => {
     await sendUpdateEmail(orderNumber, customerName, email, updateType, message, messageHistory);
     return res.status(200).json({ success: true, message: 'Notification sent' });
   } catch (error) {
-    console.error('Error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
 
 function sendUpdateEmail(orderNumber, customerName, email, updateType, message, messageHistory) {
   return new Promise((resolve, reject) => {
-    const trackingUrl = `https://lumbr.uk/pages/track-order?order=${orderNumber}`;
+    const trackingUrl = 'https://lumbr.uk/pages/track-order?order=' + orderNumber;
     const currentYear = new Date().getFullYear();
     
     let subject = '';
@@ -40,28 +37,26 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
     let topMessage = '';
     
     if (updateType === 'message') {
-      subject = `New Message - Order #${orderNumber}`;
+      subject = 'New Message - Order #' + orderNumber;
       heading = 'You have a new message';
       topMessage = '';
     } else if (updateType === 'status') {
-      subject = `Status Update - Order #${orderNumber}`;
+      subject = 'Status Update - Order #' + orderNumber;
       heading = 'Your order status has changed';
       topMessage = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 24px 0;">Your order has been updated. View the tracking page for the latest status and details.</p>';
     } else {
-      subject = `Order Update - Order #${orderNumber}`;
+      subject = 'Order Update - Order #' + orderNumber;
       heading = 'Your order has been updated';
       topMessage = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 24px 0;">There has been an update to your order. Check your tracking page for details.</p>';
     }
     
-    // BUILD CHAT SECTION - ALWAYS SHOW ON EVERY EMAIL
     let chatSection = '';
     
     if (messageHistory && Array.isArray(messageHistory) && messageHistory.length > 0) {
-      // Show last 3 messages as chat bubbles
       const recentMessages = messageHistory.slice(-3);
       let messagesHtml = '';
       
-      recentMessages.forEach(msg => {
+      recentMessages.forEach(function(msg) {
         const senderLabel = msg.sender === 'customer' ? 'You' : 'Lumbr Team';
         const isCustomer = msg.sender === 'customer';
         const alignment = isCustomer ? 'flex-end' : 'flex-start';
@@ -73,7 +68,6 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
       
       chatSection = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:24px 0;border-radius:8px;cursor:pointer;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;text-align:center;">💬 CONVERSATION</div>' + messagesHtml + '<div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #E8E4DC;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#BAA684;margin:0;font-weight:500;">Click to view full conversation</p></div></div></a>';
     } else {
-      // No messages yet - show placeholder
       chatSection = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:32px 24px;margin:24px 0;border-radius:8px;cursor:pointer;text-align:center;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">💬 CONVERSATION</div><p style="font-family:Arial,sans-serif;font-size:14px;color:#666;margin:0;line-height:1.6;">No messages yet. Have a question?<br>Click to start a conversation with us.</p></div></a>';
     }
     
@@ -97,24 +91,23 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
       }
     };
 
-    const request = https.request(options, (response) => {
+    const request = https.request(options, function(response) {
       let responseData = '';
       
-      response.on('data', (chunk) => {
+      response.on('data', function(chunk) {
         responseData += chunk;
       });
       
-      response.on('end', () => {
+      response.on('end', function() {
         if (response.statusCode === 200) {
           resolve(JSON.parse(responseData));
         } else {
-          console.error('Resend error:', responseData);
-          reject(new Error(`Resend returned status ${response.statusCode}`));
+          reject(new Error('Resend returned status ' + response.statusCode));
         }
       });
     });
 
-    request.on('error', (error) => {
+    request.on('error', function(error) {
       reject(error);
     });
 
