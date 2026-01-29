@@ -16,6 +16,8 @@ module.exports = async (req, res) => {
   try {
     const { orderNumber, customerName, email, updateType, message, messageHistory } = req.body;
     
+    console.log('Received request:', { orderNumber, updateType, messageHistoryLength: messageHistory ? messageHistory.length : 0 });
+    
     if (!orderNumber || !email) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -41,9 +43,14 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
       subject = `New Message - Order #${orderNumber}`;
       heading = 'You have a new message';
       
-      let messagesHtml = '';
-      if (messageHistory && messageHistory.length > 0) {
+      console.log('Processing message email. History:', messageHistory);
+      
+      // Check if we have message history AND it has items
+      if (messageHistory && Array.isArray(messageHistory) && messageHistory.length > 0) {
+        console.log('Building chat bubbles for', messageHistory.length, 'messages');
+        
         const recentMessages = messageHistory.slice(-3);
+        let messagesHtml = '';
         
         recentMessages.forEach(msg => {
           const senderLabel = msg.sender === 'customer' ? 'You' : 'Lumbr Team';
@@ -57,6 +64,7 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
         
         messageContent = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:24px 0;border-radius:8px;cursor:pointer;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;text-align:center;">💬 CONVERSATION</div>' + messagesHtml + '<div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #E8E4DC;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#BAA684;margin:0;font-weight:500;">Click to view full conversation</p></div></div></a>';
       } else {
+        console.log('No message history, using fallback single message');
         messageContent = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border-left:3px solid #BAA684;padding:20px 24px;margin:24px 0;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#333;cursor:pointer;">' + message + '</div></a>';
       }
     } else if (updateType === 'status') {
@@ -114,4 +122,3 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
     request.end();
   });
 }
-
