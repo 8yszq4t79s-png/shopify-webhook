@@ -31,8 +31,8 @@ module.exports = async (req, res) => {
 function sendUpdateEmail(orderNumber, customerName, email, updateType, message) {
   return new Promise((resolve, reject) => {
     const trackingUrl = `https://lumbr.uk/pages/track-order?order=${orderNumber}`;
+    const displayName = customerName || 'there';
     
-    // Determine subject and heading based on update type
     let subject = 'Order Update';
     let heading = 'Your order has been updated';
     
@@ -42,167 +42,19 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message) 
     } else if (updateType === 'status') {
       subject = `Status Update - Order #${orderNumber}`;
       heading = 'Your order status has changed';
-    } else {
-      subject = `Order Update - Order #${orderNumber}`;
     }
+    
+    const messageHtml = message ? 
+      `<div style="background-color: #FAFAFA; border-left: 3px solid #BAA684; padding: 20px 24px; margin: 24px 0; font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333333;">${message}</div>` : 
+      '<p style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #666666; margin: 0 0 16px 0;">Your order has been updated. View the tracking page for the latest status and details.</p>';
+    
+    const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; font-family: Georgia, 'Times New Roman', serif; background-color: #f5f5f5;"><div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;"><div style="background-color: #E8E4DC; padding: 48px 40px; text-align: center;"><h1 style="font-size: 42px; font-weight: 400; color: #BAA684; letter-spacing: 1px; margin: 0;">Lumbr</h1></div><div style="padding: 48px 40px; background-color: #ffffff;"><h2 style="font-size: 28px; font-weight: 400; color: #000000; margin: 0 0 24px 0;">${heading}</h2><p style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #666666; margin: 0 0 16px 0;">Hi ${displayName},</p>${messageHtml}<div style="background-color: #FAFAFA; border: 1px solid #E8E4DC; padding: 24px; margin: 32px 0;"><div style="font-family: Arial, sans-serif; padding: 8px 0; font-size: 14px;"><span style="color: #999999; text-transform: uppercase; font-size: 11px; display: block; margin-bottom: 4px;">ORDER NUMBER</span><span style="color: #000000; font-weight: 500;">#${orderNumber}</span></div></div><center><a href="${trackingUrl}" style="display: inline-block; padding: 16px 40px; background-color: #000000; color: #ffffff; text-decoration: none; font-family: Arial, sans-serif; font-size: 14px; margin: 32px 0;">VIEW ORDER STATUS</a></center><div style="height: 1px; background-color: #E8E4DC; margin: 32px 0;"></div><p style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #666666; margin: 0 0 16px 0;">If you have any questions, simply reply to this email or send a message through your order tracking page.</p><p style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #666666; margin: 24px 0 0 0;">— The Lumbr Team</p></div><div style="background-color: #E8E4DC; padding: 40px; text-align: center;"><p style="font-family: Arial, sans-serif; font-size: 12px; color: #999999; margin: 0;">Handmade in England using kiln dried, sub 10% best grade timber</p><p style="font-family: Arial, sans-serif; font-size: 12px; color: #999999; margin: 8px 0 0 0;">© ${new Date().getFullYear()} Lumbr. All rights reserved.</p></div></div></body></html>`;
     
     const emailData = JSON.stringify({
       from: 'Lumbr <lumbr@lumbr.uk>',
       to: [email],
       subject: subject,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body { 
-              margin: 0; 
-              padding: 0; 
-              font-family: Georgia, 'Times New Roman', serif;
-              background-color: #f5f5f5;
-              -webkit-font-smoothing: antialiased;
-            }
-            .email-wrapper {
-              max-width: 600px;
-              margin: 0 auto;
-              background-color: #ffffff;
-            }
-            .header {
-              background-color: #E8E4DC;
-              padding: 48px 40px;
-              text-align: center;
-            }
-            .logo {
-              font-size: 42px;
-              font-weight: 400;
-              color: #BAA684;
-              letter-spacing: 1px;
-              margin: 0;
-            }
-            .content {
-              padding: 48px 40px;
-              background-color: #ffffff;
-            }
-            .heading {
-              font-size: 28px;
-              font-weight: 400;
-              color: #000000;
-              margin: 0 0 24px 0;
-              line-height: 1.3;
-            }
-            .text {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              font-size: 15px;
-              line-height: 1.6;
-              color: #666666;
-              margin: 0 0 16px 0;
-            }
-            .message-box {
-              background-color: #FAFAFA;
-              border-left: 3px solid #BAA684;
-              padding: 20px 24px;
-              margin: 24px 0;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              font-size: 15px;
-              line-height: 1.6;
-              color: #333333;
-            }
-            .order-details {
-              background-color: #FAFAFA;
-              border: 1px solid #E8E4DC;
-              padding: 24px;
-              margin: 32px 0;
-            }
-            .detail-row {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              display: flex;
-              justify-content: space-between;
-              padding: 8px 0;
-              font-size: 14px;
-            }
-            .detail-label {
-              color: #999999;
-              text-transform: uppercase;
-              font-size: 11px;
-              letter-spacing: 0.5px;
-            }
-            .detail-value {
-              color: #000000;
-              font-weight: 500;
-            }
-            .button {
-              display: inline-block;
-              padding: 16px 40px;
-              background-color: #000000;
-              color: #ffffff !important;
-              text-decoration: none;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              font-size: 14px;
-              font-weight: 500;
-              letter-spacing: 0.5px;
-              margin: 32px 0;
-              border-radius: 2px;
-            }
-            .footer {
-              background-color: #E8E4DC;
-              padding: 40px;
-              text-align: center;
-            }
-            .footer-text {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-              font-size: 12px;
-              color: #999999;
-              margin: 0;
-              line-height: 1.6;
-            }
-            .divider {
-              height: 1px;
-              background-color: #E8E4DC;
-              margin: 32px 0;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="email-wrapper">
-            <div class="header">
-              <h1 class="logo">Lumbr</h1>
-            </div>
-            
-            <div class="content">
-              <h2 class="heading">${heading}</h2>
-              
-              <p class="text">Hi ${customerName || 'there'},</p>
-              
-              ${message ? `<div class="message-box">${message}</div>` : '<p class="text">Your order has been updated. View the tracking page for the latest status and details.</p>'}
-              
-              <div class="order-details">
-                <div class="detail-row">
-                  <span class="detail-label">Order Number</span>
-                  <span class="detail-value">#${orderNumber}</span>
-                </div>
-              </div>
-              
-              <center>
-                <a href="${trackingUrl}" class="button">VIEW ORDER STATUS</a>
-              </center>
-              
-              <div class="divider"></div>
-              
-              <p class="text">If you have any questions, simply reply to this email or send a message through your order tracking page.</p>
-              
-              <p class="text" style="margin-top: 24px;">— The Lumbr Team</p>
-            </div>
-            
-            <div class="footer">
-              <p class="footer-text">Handmade in England using kiln dried, sub 10% best grade timber</p>
-              <p class="footer-text" style="margin-top: 8px;">© ${new Date().getFullYear()} Lumbr. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
+      html: htmlContent
     });
 
     const options = {
@@ -228,7 +80,7 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message) 
           resolve(JSON.parse(responseData));
         } else {
           console.error('Resend API error:', responseData);
-          reject(new Error(`Resend returned status ${response.statusCode}`));
+          reject(new Error(`Resend returned status ${response.statusCode}: ${responseData}`));
         }
       });
     });
