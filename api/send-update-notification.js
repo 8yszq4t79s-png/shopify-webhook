@@ -14,13 +14,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { orderNumber, customerName, email, updateType, message, messageHistory } = req.body;
-    
+    // stage + reviewUrl are optional, sent by the Lumbr admin app. When the
+    // order is marked Delivered (stage === 'completed') and a reviewUrl is
+    // present, the status email becomes the review-capture email.
+    const { orderNumber, customerName, email, updateType, message, messageHistory, stage, reviewUrl } = req.body;
+
     if (!orderNumber || !email) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    await sendUpdateEmail(orderNumber, customerName, email, updateType, message, messageHistory);
+    await sendUpdateEmail(orderNumber, customerName, email, updateType, message, messageHistory, stage, reviewUrl);
     return res.status(200).json({ success: true, message: 'Notification sent' });
   } catch (error) {
     console.error('Error in send-update-notification:', error);
@@ -28,19 +31,47 @@ module.exports = async (req, res) => {
   }
 };
 
-function sendUpdateEmail(orderNumber, customerName, email, updateType, message, messageHistory) {
+function sendUpdateEmail(orderNumber, customerName, email, updateType, message, messageHistory, stage, reviewUrl) {
   return new Promise((resolve, reject) => {
     const trackingUrl = 'https://lumbr.uk/pages/track-order?order=' + orderNumber;
     const currentYear = new Date().getFullYear();
-    
+
     let subject = '';
     let heading = '';
     let topMessage = '';
-    
+    // The main call-to-action defaults to the tracking page ("VIEW ORDER");
+    // the delivered/review email points it at the review page instead.
+    let ctaUrl = trackingUrl;
+    let ctaLabel = 'VIEW ORDER';
+    let isReviewEmail = false;
+
     if (updateType === 'message') {
       subject = 'New Message - Order #' + orderNumber;
       heading = 'You have a new message';
       topMessage = '';
+    } else if (updateType === 'status' && stage === 'completed' && reviewUrl) {
+      // ---- Delivered → review capture email ----
+      // Email clients strip forms/JS, so the "form" is 5 star links: tapping
+      // a star opens the customer's personal review page with that rating
+      // pre-selected; the optional text box + Send Review button live there.
+      isReviewEmail = true;
+      subject = 'Your order has been delivered - Order #' + orderNumber;
+      heading = 'Your order has been delivered';
+      ctaUrl = reviewUrl;
+      ctaLabel = 'SEND REVIEW';
+
+      let starsHtml = '';
+      for (let i = 1; i <= 5; i++) {
+        starsHtml += '<a href="' + reviewUrl + '&rating=' + i + '" style="text-decoration:none;font-size:40px;line-height:1;color:#BAA684;padding:0 5px;display:inline-block;">&#9733;</a>';
+      }
+
+      topMessage =
+        '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 24px 0;">We hope you love your new piece &mdash; it was made by hand, just for you. We\'d be hugely grateful if you could take a moment to tell us how we did.</p>' +
+        '<div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:32px 24px;margin:24px 0;border-radius:8px;text-align:center;">' +
+          '<div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:18px;text-transform:uppercase;letter-spacing:1px;">RATE YOUR EXPERIENCE</div>' +
+          '<div>' + starsHtml + '</div>' +
+          '<p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:18px 0 0 0;">Tap a star to rate us out of 5 &mdash; you can add a few words on the next page.</p>' +
+        '</div>';
     } else if (updateType === 'status') {
       subject = 'Status Update - Order #' + orderNumber;
       heading = 'Your order status has changed';
@@ -50,30 +81,33 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
       heading = 'Your order has been updated';
       topMessage = '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 24px 0;">There has been an update to your order. Check your tracking page for details.</p>';
     }
-    
+
     let chatSection = '';
-    
-    if (messageHistory && Array.isArray(messageHistory) && messageHistory.length > 0) {
+
+    if (isReviewEmail) {
+      // The review email stays focused on the rating — no chat block.
+      chatSection = '';
+    } else if (messageHistory && Array.isArray(messageHistory) && messageHistory.length > 0) {
       const recentMessages = messageHistory.slice(-3);
       let messagesHtml = '';
-      
+
       recentMessages.forEach(function(msg) {
         const senderLabel = msg.sender === 'customer' ? 'You' : 'Lumbr Team';
         const isCustomer = msg.sender === 'customer';
         const alignment = isCustomer ? 'flex-end' : 'flex-start';
         const bgColor = isCustomer ? '#000' : '#E8E4DC';
         const textColor = isCustomer ? '#fff' : '#333';
-        
+
         messagesHtml += '<div style="display:flex;justify-content:' + alignment + ';margin-bottom:12px;"><div style="max-width:75%;background-color:' + bgColor + ';color:' + textColor + ';padding:12px 16px;border-radius:16px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:600;opacity:0.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">' + senderLabel + '</div><div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.4;">' + msg.message + '</div></div></div>';
       });
-      
+
       chatSection = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:24px 0;border-radius:8px;cursor:pointer;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;text-align:center;">💬 CONVERSATION</div>' + messagesHtml + '<div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #E8E4DC;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#BAA684;margin:0;font-weight:500;">Click to view full conversation</p></div></div></a>';
     } else {
       chatSection = '<a href="' + trackingUrl + '" style="text-decoration:none;color:inherit;display:block;"><div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:32px 24px;margin:24px 0;border-radius:8px;cursor:pointer;text-align:center;"><div style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#999;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">💬 CONVERSATION</div><p style="font-family:Arial,sans-serif;font-size:14px;color:#666;margin:0;line-height:1.6;">No messages yet. Have a question?<br>Click to start a conversation with us.</p></div></a>';
     }
-    
-    const htmlEmail = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;font-family:Georgia,serif;background-color:#f5f5f5;"><div style="max-width:600px;margin:0 auto;background-color:#fff;"><div style="background-color:#E8E4DC;padding:48px 40px;text-align:center;"><img src="https://cdn.shopify.com/s/files/1/0903/8145/1529/files/lumbrlogo-large.png?v=1776847852" alt="Lumbr" style="max-width:200px;height:auto;margin:0 auto;display:block;"></div><div style="padding:48px 40px;background-color:#fff;"><h2 style="font-size:28px;font-weight:400;color:#000;margin:0 0 24px 0;">' + heading + '</h2><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">Hi ' + (customerName || 'there') + ',</p>' + topMessage + chatSection + '<div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:32px 0;"><div style="font-family:Arial,sans-serif;padding:8px 0;font-size:14px;"><span style="color:#999;text-transform:uppercase;font-size:11px;letter-spacing:0.5px;display:block;margin-bottom:8px;">ORDER NUMBER</span><span style="color:#000;font-weight:500;">#' + orderNumber + '</span></div></div><center><a href="' + trackingUrl + '" style="display:inline-block;padding:16px 40px;background-color:#000;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:500;letter-spacing:0.5px;margin:32px 0;border-radius:2px;">VIEW ORDER</a></center><div style="height:1px;background-color:#E8E4DC;margin:32px 0;"></div><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">If you have any questions, simply reply to this email or send a message through your order tracking page.</p><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:24px 0 0 0;">- The Lumbr Team</p></div><div style="background-color:#E8E4DC;padding:40px;text-align:center;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:0;line-height:1.6;">Handmade in England using kiln dried, sub 10% best grade timber</p><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:8px 0 0 0;">&copy; ' + currentYear + ' Lumbr. All rights reserved.</p></div></div></body></html>';
-    
+
+    const htmlEmail = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;font-family:Georgia,serif;background-color:#f5f5f5;"><div style="max-width:600px;margin:0 auto;background-color:#fff;"><div style="background-color:#E8E4DC;padding:48px 40px;text-align:center;"><img src="https://cdn.shopify.com/s/files/1/0903/8145/1529/files/lumbrlogo-large.png?v=1776847852" alt="Lumbr" style="max-width:200px;height:auto;margin:0 auto;display:block;"></div><div style="padding:48px 40px;background-color:#fff;"><h2 style="font-size:28px;font-weight:400;color:#000;margin:0 0 24px 0;">' + heading + '</h2><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">Hi ' + (customerName || 'there') + ',</p>' + topMessage + chatSection + '<div style="background-color:#FAFAFA;border:1px solid #E8E4DC;padding:24px;margin:32px 0;"><div style="font-family:Arial,sans-serif;padding:8px 0;font-size:14px;"><span style="color:#999;text-transform:uppercase;font-size:11px;letter-spacing:0.5px;display:block;margin-bottom:8px;">ORDER NUMBER</span><span style="color:#000;font-weight:500;">#' + orderNumber + '</span></div></div><center><a href="' + ctaUrl + '" style="display:inline-block;padding:16px 40px;background-color:#000;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:500;letter-spacing:0.5px;margin:32px 0;border-radius:2px;">' + ctaLabel + '</a></center><div style="height:1px;background-color:#E8E4DC;margin:32px 0;"></div><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:0 0 16px 0;">If you have any questions, simply reply to this email or send a message through your order tracking page.</p><p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#666;margin:24px 0 0 0;">- The Lumbr Team</p></div><div style="background-color:#E8E4DC;padding:40px;text-align:center;"><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:0;line-height:1.6;">Handmade in England using kiln dried, sub 10% best grade timber</p><p style="font-family:Arial,sans-serif;font-size:12px;color:#999;margin:8px 0 0 0;">&copy; ' + currentYear + ' Lumbr. All rights reserved.</p></div></div></body></html>';
+
     const emailData = JSON.stringify({
       from: 'Lumbr <lumbr@lumbr.uk>',
       to: [email],
@@ -86,7 +120,11 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
       path: '/emails',
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer re_43sN12hD_N7wiVYfZHZ3vgPWEVi3HwGUA',
+        // Prefer the env var; the inline key remains as a fallback so this
+        // deploy changes nothing until RESEND_API_KEY is set in Vercel.
+        // TODO: once RESEND_API_KEY is set on the Vercel project, delete the
+        // inline fallback and rotate the key (it lives in git history).
+        'Authorization': 'Bearer ' + (process.env.RESEND_API_KEY || 're_43sN12hD_N7wiVYfZHZ3vgPWEVi3HwGUA'),
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(emailData)
       }
@@ -94,11 +132,11 @@ function sendUpdateEmail(orderNumber, customerName, email, updateType, message, 
 
     const request = https.request(options, function(response) {
       let responseData = '';
-      
+
       response.on('data', function(chunk) {
         responseData += chunk;
       });
-      
+
       response.on('end', function() {
         console.log('Resend API response:', response.statusCode, responseData);
         if (response.statusCode === 200) {
